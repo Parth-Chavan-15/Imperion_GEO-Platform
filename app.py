@@ -58,7 +58,6 @@ def scrape_content(url):
 
 def calculate_trust_score(text, model):
     """ Innovation A: The 'Hype-Checker' (0-100) """
-    # We ask for a score AND a reasoning to ensure the model thinks deeply
     prompt = f"""
     Analyze the tone of the following text for a 'Trust Score' (0-100).
     - 0 = Highly promotional, salesy, spammy, hype-filled (e.g. "Buy now", "Life changing").
@@ -70,23 +69,45 @@ def calculate_trust_score(text, model):
     """
     try:
         response = model.generate_content(prompt)
-        # Extract the first number found in the response
         match = re.search(r'\d+', response.text)
         if match:
             score = int(match.group())
             return min(max(score, 0), 100)
         return 50
     except:
-        return 50 # Fallback
+        return 50 
 
-def calculate_fact_density(text):
-    """ Innovation B: Fact-Density Metric (Ratio of Hard Entities) """
-    words = text.split()
-    if len(words) == 0: return 0
-    # Count numbers and Capitalized words (excluding start of sentence)
-    hard_entities = len(re.findall(r'\b[A-Z][a-z]+\b', text)) + len(re.findall(r'\d+', text))
-    density = (hard_entities / len(words)) * 100
-    return round(density, 2)
+def calculate_fact_density_smart(text, model):
+    """ 
+    Innovation B: Fact-Density Metric (AI-Powered)
+    Uses Gemini to estimate the density of actual information vs. fluff.
+    """
+    prompt = f"""
+    Analyze the 'Information Density' of the following text.
+    Give a score from 0-100 representing how much of the text is "Hard Information".
+    
+    Rules for 'Hard Information' (High Density):
+    - Specific Entities (Names, Brands, Locations).
+    - Data points (Numbers, Dates, Prices, Percentages).
+    - Technical terminology.
+    
+    Rules for 'Fluff' (Low Density):
+    - Generic marketing headers (e.g. "Try for Free", "Welcome Home").
+    - Empty adjectives (e.g. "Amazing", "Best", "Easy").
+    - Capitalized words that are just titles/headers are NOT facts.
+    
+    Text snippet: {text[:2000]}
+    
+    Return ONLY a single number (e.g. 15).
+    """
+    try:
+        response = model.generate_content(prompt)
+        match = re.search(r'\d+', response.text)
+        if match:
+            return int(match.group())
+        return 10 # Fallback
+    except:
+        return 10
 
 def check_schema_match(ai_text, user_data):
     """ Module D: Schema Validator """
@@ -161,16 +182,16 @@ if run_btn and api_key and target_url and query:
     st.divider()
     st.subheader("🧠 Step 5: The GEO Analysis Layer")
     
-    # Calculate Metrics
+    # Calculate Metrics (NOW USING AI MODEL FOR DENSITY)
     trust_score = calculate_trust_score(user_data['text'], model)
-    user_density = calculate_fact_density(user_data['text'])
-    ai_density = calculate_fact_density(ai_text)
+    user_density = calculate_fact_density_smart(user_data['text'], model)
+    ai_density = calculate_fact_density_smart(ai_text, model)
     user_readability = textstat.flesch_reading_ease(user_data['text'])
     ai_readability = textstat.flesch_reading_ease(ai_text)
     
     # Competitor logic
     if comp_data:
-        comp_density = calculate_fact_density(comp_data['text'])
+        comp_density = calculate_fact_density_smart(comp_data['text'], model)
         st.info(f"⚔️ **Competitor Intel:** They have **{comp_data['word_count']} words** and **{comp_data['lists']} lists** (Density: {comp_density}%).")
     
     c1, c2, c3 = st.columns(3)
@@ -197,7 +218,7 @@ if run_btn and api_key and target_url and query:
         
         if comp_data:
             sources.append("Competitor")
-            densities.append(calculate_fact_density(comp_data['text']))
+            densities.append(comp_density)
             colors.append('#FFA500') 
 
         fig2 = go.Figure(data=[go.Bar(x=sources, y=densities, marker_color=colors)])
@@ -212,7 +233,7 @@ if run_btn and api_key and target_url and query:
         if diff > 15: st.warning("⚠️ Style Mismatch.")
         else: st.success("✅ Style Aligned.")
 
-    # --- STEP 6: OPTIMIZATION ENGINE (NOW DYNAMIC!) ---
+    # --- STEP 6: OPTIMIZATION ENGINE (DYNAMIC) ---
     st.divider()
     st.subheader("🚀 Step 6: Actionable Recommendations")
     
@@ -223,9 +244,9 @@ if run_btn and api_key and target_url and query:
     
     # 2. Density Check
     if user_density < ai_density:
-        recommendations.append(f"📉 **Low Information Density:** Your content has **{user_density}%** hard facts, but AI expects **{ai_density}%**. Add more dates, statistics, and specific entities.")
+        recommendations.append(f"📉 **Low Information Density:** Your content is {user_density}% facts, but AI expects {ai_density}%. Your text has too much 'fluff'. Add specific dates, numbers, or technical specs.")
         
-    # 3. Tone Check (DYNAMIC - NO HARDCODED WORDS)
+    # 3. Tone Check (DYNAMIC)
     if trust_score < 60:
         with st.spinner("🔍 Identifying specific salesy words in your text..."):
             tone_prompt = f"""
