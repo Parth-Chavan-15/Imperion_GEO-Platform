@@ -9,7 +9,7 @@ import re
 import time # Added for smooth UI transitions
 
 # --- 1. HARDCODE API KEY HERE ---
-GOOGLE_API_KEY = "API_KEY"  # <--- PASTE YOUR KEY HERE
+GOOGLE_API_KEY = "API_Key"  # <--- PASTE YOUR KEY HERE
 
 # --- CONFIGURATION & SETUP ---
 st.set_page_config(
@@ -142,7 +142,7 @@ with st.sidebar:
     
     run_btn = st.button("🚀 Run GEO Analysis")
     st.divider()
-    st.caption("Powered by Google Gemini & Firecrawl Logic")
+    st.caption("Powered by Google Gemini & BeautifulSoup Logic")
 
 # Main Dashboard
 if run_btn and target_url and query:
@@ -260,7 +260,7 @@ if run_btn and target_url and query:
 
     # --- STEP 6: OPTIMIZATION ENGINE (DYNAMIC) ---
     st.divider()
-    st.subheader("🚀 Step 6: Actionable Recommendations")
+    st.subheader("🚀 Actionable Recommendations")
     
     recommendations = []
     
@@ -305,6 +305,44 @@ if run_btn and target_url and query:
 elif run_btn:
     st.error("Please fill in all fields (URL, Query).")
 
+else:
+    # --- WELCOME SCREEN (The Empty State) ---
+    st.markdown("""
+    <div style='text-align: center; padding: 50px 0;'>
+        <h1 style='font-size: 60px; margin-bottom: 0;'>⚡ IMPERION</h1>
+        <h3 style='color: #888; margin-top: 10px;'>Generative Engine Optimization (GEO) Platform</h3>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class='metric-card'>
+            <h3>🕵️ Digital Twin</h3>
+            <p>We scrape your site to extract structural signals (H-tags, Lists) exactly how AI bots see them.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+        <div class='metric-card'>
+            <h3>🧠 AI Simulator</h3>
+            <p>We query the live Google Gemini API to generate the "Ground Truth" answer for your target keywords.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    with col3:
+        st.markdown("""
+        <div class='metric-card'>
+            <h3>🚀 Gap Analysis</h3>
+            <p>Our engine detects "Trust Gaps" and "Salesy Language" that cause AI models to ignore your content.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.info("👈 **To Begin:** Enter your Website URL and Target Query in the sidebar.")
+
 # Footer
 st.markdown("---")
-st.caption("Imperion GEO Platform © 2026 | Built for Hackathon PS01")
+st.caption("Imperion GEO Platform | Hack-AI-Thon 4.0 PS01")
