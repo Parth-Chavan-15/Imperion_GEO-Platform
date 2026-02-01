@@ -6,6 +6,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import textstat
 import re
+import time # Added for smooth UI transitions
+
+# --- 1. HARDCODE API KEY HERE ---
+GOOGLE_API_KEY = "AIzaSyA25_Qk8mzIJ4Pepf0iJbjJHjTo9JEzlu0"  # <--- PASTE YOUR KEY HERE
 
 # --- CONFIGURATION & SETUP ---
 st.set_page_config(
@@ -28,7 +32,7 @@ st.markdown("""
 # --- MODULE 1: THE SPY (Scraping Logic) ---
 def scrape_content(url):
     """
-    Step 2: Structural Analysis. Extracts H-tags, text, and structural signals.
+    Structural Analysis. Extracts H-tags, text, and structural signals.
     """
     if not url: return None
     try:
@@ -63,7 +67,7 @@ def calculate_trust_score(text, model):
     - 0 = Highly promotional, salesy, spammy, hype-filled (e.g. "Buy now", "Life changing").
     - 100 = Objective, encyclopedia-style, research-backed, neutral.
     
-    Text snippet: {text[:2000]}
+    Text snippet: {text}
     
     Return ONLY a single number (e.g. 45).
     """
@@ -96,7 +100,7 @@ def calculate_fact_density_smart(text, model):
     - Empty adjectives (e.g. "Amazing", "Best", "Easy").
     - Capitalized words that are just titles/headers are NOT facts.
     
-    Text snippet: {text[:2000]}
+    Text snippet: {text}
     
     Return ONLY a single number (e.g. 15).
     """
@@ -129,7 +133,9 @@ with st.sidebar:
     st.markdown("### GEO Platform")
     st.info("Aligning Content with AI Synthesis")
     
-    api_key = st.text_input("🔑 Gemini API Key", type="password")
+    # HARDCODED KEY REMOVED FROM INPUT
+    # api_key = st.text_input("🔑 Gemini API Key", type="password")
+    
     target_url = st.text_input("🌐 Your Website URL")
     competitor_url = st.text_input("⚔️ Competitor URL (Optional)", placeholder="e.g. Rival Brand")
     query = st.text_input("🔍 Target User Query")
@@ -139,10 +145,15 @@ with st.sidebar:
     st.caption("Powered by Google Gemini & Firecrawl Logic")
 
 # Main Dashboard
-if run_btn and api_key and target_url and query:
+if run_btn and target_url and query:
     
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    # CHECK FOR KEY
+    if GOOGLE_API_KEY == "PASTE_YOUR_KEY_HERE":
+        st.error("⚠️ Please paste your API Key in line 12 of the code!")
+        st.stop()
+        
+    genai.configure(api_key=GOOGLE_API_KEY)
+    model = genai.GenerativeModel('gemini-2.5-flash') # Use gemini-flash for speed
     
     # --- STEP 2: STRUCTURAL ANALYSIS (User & Competitor) ---
     with st.status("🕵️ Step 2: Running Structural Spy...", expanded=True) as status:
@@ -161,7 +172,7 @@ if run_btn and api_key and target_url and query:
         status.update(label="✅ Digital Twin Created", state="complete", expanded=False)
 
     # --- STEP 3: AI SIMULATION ---
-    with st.status("🤖 Step 3: Simulating AI Mental Model...", expanded=True) as status:
+    with st.status("🤖 Simulating AI Mental Model...", expanded=True) as status:
         st.write(f"Querying Gemini with: '{query}'...")
         ai_prompt = f"Act as an advanced search engine. User query: '{query}'. Provide a comprehensive, structured answer using bullet points, data, and definitions."
         ai_response = model.generate_content(ai_prompt)
@@ -169,7 +180,7 @@ if run_btn and api_key and target_url and query:
         status.update(label="✅ Simulation Complete", state="complete", expanded=False)
 
     # --- STEP 4: SYNTHESIS VIEW (Read-Only) ---
-    st.subheader("👁️ Step 4: AI Synthesis View")
+    st.subheader("👁️ AI Synthesis View")
     col1, col2 = st.columns(2)
     with col1:
         st.success("🤖 What AI Generated (The Goal)")
@@ -178,16 +189,76 @@ if run_btn and api_key and target_url and query:
         st.warning("📄 Your Content (The Reality)")
         st.markdown(f"<div style='height:300px; overflow-y:scroll; background-color:#262730; padding:10px; border-radius:5px;'>{user_data['text']}</div>", unsafe_allow_html=True)
 
+    # --- LOADING BAR FOR STEP 5 (THE FIX) ---
+    st.divider()
+    
+    # This status block keeps the user engaged while the slow API calls run
+    with st.status("🧠 Processing Deep GEO Metrics (This takes ~20s)...", expanded=True) as status:
+        st.write("🛡️ Analyzing Tone & Trust Score...")
+        trust_score = calculate_trust_score(user_data['text'], model)
+        
+        st.write("📊 Calculating Fact Density (AI vs User)...")
+        user_density = calculate_fact_density_smart(user_data['text'], model)
+        ai_density = calculate_fact_density_smart(ai_text, model)
+        
+        st.write("📖 Measuring Readability Complexity...")
+        user_readability = textstat.flesch_reading_ease(user_data['text'])
+        ai_readability = textstat.flesch_reading_ease(ai_text)
+        
+        status.update(label="✅ Deep Analysis Complete", state="complete", expanded=False)
+
     # --- STEP 5: GEO ANALYSIS LAYER (The Brain) ---
     st.divider()
-    st.subheader("🧠 Step 5: The GEO Analysis Layer")
+    st.subheader("🧠 The GEO Analysis Layer")
     
-    # Calculate Metrics (NOW USING AI MODEL FOR DENSITY)
-    trust_score = calculate_trust_score(user_data['text'], model)
-    user_density = calculate_fact_density_smart(user_data['text'], model)
-    ai_density = calculate_fact_density_smart(ai_text, model)
-    user_readability = textstat.flesch_reading_ease(user_data['text'])
-    ai_readability = textstat.flesch_reading_ease(ai_text)
+    # --- NEW SECOND LOADER FOR VISUALS ---
+    with st.spinner("🎨 Generating visual demonstrations & plotting graphs..."):
+        time.sleep(1.5) # Artificial pause to make the loader visible (optional but looks cool)
+        
+        # Competitor logic
+        if comp_data:
+            comp_density = calculate_fact_density_smart(comp_data['text'], model)
+            st.info(f"⚔️ **Competitor Intel:** They have **{comp_data['word_count']} words** and **{comp_data['lists']} lists** (Density: {comp_density}%).")
+        
+        c1, c2, c3 = st.columns(3)
+        
+        # MODULE A: TRUST SCORE
+        with c1:
+            st.markdown("#### 🛡️ Trust Score")
+            fig = go.Figure(go.Indicator(
+                mode = "gauge+number", value = trust_score,
+                domain = {'x': [0, 1], 'y': [0, 1]},
+                title = {'text': "Hype Check"},
+                gauge = {'axis': {'range': [0, 100]}, 'bar': {'color': "#00D4FF"},
+                         'steps': [{'range': [0, 40], 'color': "#FF4B4B"}, {'range': [80, 100], 'color': "#00CC96"}]}
+            ))
+            fig.update_layout(height=250, margin=dict(l=10,r=10,t=30,b=10), paper_bgcolor="#0E1117", font={'color': "white"})
+            st.plotly_chart(fig, use_container_width=True)
+
+        # MODULE B: FACT DENSITY
+        with c2:
+            st.markdown("#### 📊 Fact Density")
+            sources = ['AI Requirement', 'Your Content']
+            densities = [ai_density, user_density]
+            colors = ['#00CC96', '#FF4B4B' if user_density < ai_density else '#00D4FF']
+            
+            if comp_data:
+                sources.append("Competitor")
+                densities.append(comp_density)
+                colors.append('#FFA500') 
+
+            fig2 = go.Figure(data=[go.Bar(x=sources, y=densities, marker_color=colors)])
+            fig2.update_layout(title="Hard Entities Ratio", height=250, paper_bgcolor="#0E1117", plot_bgcolor="#0E1117", font={'color': "white"})
+            st.plotly_chart(fig2, use_container_width=True)
+
+        # MODULE C: READABILITY
+        with c3:
+            st.markdown("#### 📖 Readability Match")
+            diff = abs(user_readability - ai_readability)
+            st.metric("Reading Ease Score", f"{user_readability:.1f}", delta=f"Diff: {diff:.1f}")
+            if diff > 15: st.warning("⚠️ Style Mismatch.")
+            else: st.success("✅ Style Aligned.")
+
     
     # Competitor logic
     if comp_data:
@@ -246,16 +317,16 @@ if run_btn and api_key and target_url and query:
     if user_density < ai_density:
         recommendations.append(f"📉 **Low Information Density:** Your content is {user_density}% facts, but AI expects {ai_density}%. Your text has too much 'fluff'. Add specific dates, numbers, or technical specs.")
         
-    # 3. Tone Check (DYNAMIC)
+    # 3. Tone Check (DYNAMIC - Runs inside a spinner because it's another API call)
     if trust_score < 60:
-        with st.spinner("🔍 Identifying specific salesy words in your text..."):
+        with st.spinner("🔍 Identifying specific salesy words to remove..."):
             tone_prompt = f"""
             The following text was flagged as "Promotional/Salesy" (Score: {trust_score}/100).
             Identify specific phrases or words IN THE TEXT that make it sound salesy.
             Return them as a bulleted list. 
             Do NOT give generic advice. Quote the text.
             
-            Text: {user_data['text'][:2000]}
+            Text: {user_data['text']}
             """
             tone_advice = model.generate_content(tone_prompt).text
             recommendations.append(f"📢 **Tone Mismatch:** Your content is too promotional.\n\n**Specific words to remove/change:**\n{tone_advice}")
@@ -270,12 +341,15 @@ if run_btn and api_key and target_url and query:
     else: st.info("✅ Structure looks good!")
         
     st.markdown("### 🔍 Content Gaps")
-    gap_prompt = f"Compare these texts. AI Text: {ai_text}. User Text: {user_data['text'][:3000]}. List 2 specific topics present in AI but MISSING from User. Start bullets with 'Missing Topic:'."
-    gap_response = model.generate_content(gap_prompt)
-    st.write(gap_response.text)
+    
+    # Content Gap is also a slow call, so we wrap it
+    with st.spinner("🔍 Comparing content depth against AI knowledge..."):
+        gap_prompt = f"Compare these texts. AI Text: {ai_text}. User Text: {user_data['text']}. List 2 specific topics present in AI but MISSING from User. Start bullets with 'Missing Topic:'."
+        gap_response = model.generate_content(gap_prompt)
+        st.write(gap_response.text)
 
 elif run_btn:
-    st.error("Please fill in all fields (API Key, URL, Query).")
+    st.error("Please fill in all fields (URL, Query).")
 
 # Footer
 st.markdown("---")
