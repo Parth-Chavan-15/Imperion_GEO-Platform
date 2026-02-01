@@ -9,7 +9,7 @@ import re
 import time # Added for smooth UI transitions
 
 # --- 1. HARDCODE API KEY HERE ---
-GOOGLE_API_KEY = "AIzaSyA25_Qk8mzIJ4Pepf0iJbjJHjTo9JEzlu0"  # <--- PASTE YOUR KEY HERE
+GOOGLE_API_KEY = "API_KEY"  # <--- PASTE YOUR KEY HERE
 
 # --- CONFIGURATION & SETUP ---
 st.set_page_config(
@@ -189,10 +189,10 @@ if run_btn and target_url and query:
         st.warning("📄 Your Content (The Reality)")
         st.markdown(f"<div style='height:300px; overflow-y:scroll; background-color:#262730; padding:10px; border-radius:5px;'>{user_data['text']}</div>", unsafe_allow_html=True)
 
-    # --- LOADING BAR FOR STEP 5 (THE FIX) ---
+# --- LOADING BAR FOR STEP 5 (THE BRAIN) ---
     st.divider()
     
-    # This status block keeps the user engaged while the slow API calls run
+    # 1. First Loader: The Math & Logic (Calculations happen here)
     with st.status("🧠 Processing Deep GEO Metrics (This takes ~20s)...", expanded=True) as status:
         st.write("🛡️ Analyzing Tone & Trust Score...")
         trust_score = calculate_trust_score(user_data['text'], model)
@@ -207,13 +207,12 @@ if run_btn and target_url and query:
         
         status.update(label="✅ Deep Analysis Complete", state="complete", expanded=False)
 
-    # --- STEP 5: GEO ANALYSIS LAYER (The Brain) ---
-    st.divider()
+    # --- STEP 5: GEO ANALYSIS LAYER (THE VISUALS) ---
     st.subheader("🧠 The GEO Analysis Layer")
     
-    # --- NEW SECOND LOADER FOR VISUALS ---
+    # 2. Second Loader: The Visuals (Charts render here)
     with st.spinner("🎨 Generating visual demonstrations & plotting graphs..."):
-        time.sleep(1.5) # Artificial pause to make the loader visible (optional but looks cool)
+        time.sleep(1.5) # Aesthetic pause so the user sees the "Generating" text
         
         # Competitor logic
         if comp_data:
@@ -222,7 +221,7 @@ if run_btn and target_url and query:
         
         c1, c2, c3 = st.columns(3)
         
-        # MODULE A: TRUST SCORE
+        # MODULE A: TRUST SCORE (Added key="trust_chart" to fix crash)
         with c1:
             st.markdown("#### 🛡️ Trust Score")
             fig = go.Figure(go.Indicator(
@@ -233,9 +232,9 @@ if run_btn and target_url and query:
                          'steps': [{'range': [0, 40], 'color': "#FF4B4B"}, {'range': [80, 100], 'color': "#00CC96"}]}
             ))
             fig.update_layout(height=250, margin=dict(l=10,r=10,t=30,b=10), paper_bgcolor="#0E1117", font={'color': "white"})
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="trust_chart")
 
-        # MODULE B: FACT DENSITY
+        # MODULE B: FACT DENSITY (Added key="density_chart" to fix crash)
         with c2:
             st.markdown("#### 📊 Fact Density")
             sources = ['AI Requirement', 'Your Content']
@@ -249,7 +248,7 @@ if run_btn and target_url and query:
 
             fig2 = go.Figure(data=[go.Bar(x=sources, y=densities, marker_color=colors)])
             fig2.update_layout(title="Hard Entities Ratio", height=250, paper_bgcolor="#0E1117", plot_bgcolor="#0E1117", font={'color': "white"})
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, use_container_width=True, key="density_chart")
 
         # MODULE C: READABILITY
         with c3:
@@ -258,51 +257,6 @@ if run_btn and target_url and query:
             st.metric("Reading Ease Score", f"{user_readability:.1f}", delta=f"Diff: {diff:.1f}")
             if diff > 15: st.warning("⚠️ Style Mismatch.")
             else: st.success("✅ Style Aligned.")
-
-    
-    # Competitor logic
-    if comp_data:
-        comp_density = calculate_fact_density_smart(comp_data['text'], model)
-        st.info(f"⚔️ **Competitor Intel:** They have **{comp_data['word_count']} words** and **{comp_data['lists']} lists** (Density: {comp_density}%).")
-    
-    c1, c2, c3 = st.columns(3)
-    
-    # MODULE A: TRUST SCORE
-    with c1:
-        st.markdown("#### 🛡️ Trust Score")
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number", value = trust_score,
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': "Hype Check"},
-            gauge = {'axis': {'range': [0, 100]}, 'bar': {'color': "#00D4FF"},
-                     'steps': [{'range': [0, 40], 'color': "#FF4B4B"}, {'range': [80, 100], 'color': "#00CC96"}]}
-        ))
-        fig.update_layout(height=250, margin=dict(l=10,r=10,t=30,b=10), paper_bgcolor="#0E1117", font={'color': "white"})
-        st.plotly_chart(fig, use_container_width=True)
-
-    # MODULE B: FACT DENSITY
-    with c2:
-        st.markdown("#### 📊 Fact Density")
-        sources = ['AI Requirement', 'Your Content']
-        densities = [ai_density, user_density]
-        colors = ['#00CC96', '#FF4B4B' if user_density < ai_density else '#00D4FF']
-        
-        if comp_data:
-            sources.append("Competitor")
-            densities.append(comp_density)
-            colors.append('#FFA500') 
-
-        fig2 = go.Figure(data=[go.Bar(x=sources, y=densities, marker_color=colors)])
-        fig2.update_layout(title="Hard Entities Ratio", height=250, paper_bgcolor="#0E1117", plot_bgcolor="#0E1117", font={'color': "white"})
-        st.plotly_chart(fig2, use_container_width=True)
-
-    # MODULE C: READABILITY
-    with c3:
-        st.markdown("#### 📖 Readability Match")
-        diff = abs(user_readability - ai_readability)
-        st.metric("Reading Ease Score", f"{user_readability:.1f}", delta=f"Diff: {diff:.1f}")
-        if diff > 15: st.warning("⚠️ Style Mismatch.")
-        else: st.success("✅ Style Aligned.")
 
     # --- STEP 6: OPTIMIZATION ENGINE (DYNAMIC) ---
     st.divider()
