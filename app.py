@@ -8,7 +8,6 @@ import textstat
 import re
 import time # Added for smooth UI transitions
 
-# --- 1. HARDCODE API KEY HERE ---
 GOOGLE_API_KEY = "API_Key"  # <--- PASTE YOUR KEY HERE
 
 # --- CONFIGURATION & SETUP ---
@@ -149,7 +148,7 @@ if run_btn and target_url and query:
     
     # CHECK FOR KEY
     if GOOGLE_API_KEY == "PASTE_YOUR_KEY_HERE":
-        st.error("⚠️ Please paste your API Key in line 12 of the code!")
+        st.error("⚠️ Please paste your API Key in line 11 of the code!")
         st.stop()
         
     genai.configure(api_key=GOOGLE_API_KEY)
